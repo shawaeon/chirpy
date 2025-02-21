@@ -3,16 +3,24 @@ package main
 import (
 	"log"
 	"net/http"
+	"sync/atomic"
 	"time"
 )
 
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
+
+	cfg := apiConfig{
+		fileserverHits: atomic.Int32{},
+	}
 	
 	mux := http.NewServeMux()
-	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	mux.Handle("/app/", cfg.middlewareMetricsInc(
+		http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("/healthz", handlerReadiness)
+	mux.HandleFunc("/metrics", cfg.handlerMetrics)
+	mux.HandleFunc("/reset", cfg.handlerResetMetrics)
 
 	srv := &http.Server {
 		Addr: ":" + port,
@@ -25,8 +33,15 @@ func main() {
 	log.Fatal(srv.ListenAndServe())	
 }
 
-func handlerReadiness(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
+type apiConfig struct {
+	fileserverHits atomic.Int32
 }
+
+// Middleware to keep count of requests
+func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+		cfg.fileserverHits.Add(1)
+		next.ServeHTTP(w, r)
+	})	
+}
+
