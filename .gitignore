@@ -23,3 +23,6 @@ go.work.sum
 
 # executable
 out
+
+# API tests
+API_TEST.rest

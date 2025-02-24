@@ -13,11 +13,11 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})	
 }
 
-func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, `
 	<html>
-		<body>
+		<body style='color:lightgray; background-color:black'>
 			<h1>Welcome, Chirpy Admin</h1>
 			<p>Chirpy has been visited %d times!</p>
 		</body>
@@ -25,7 +25,7 @@ func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
 	`, cfg.fileserverHits.Load())
 }
 
-func (cfg *apiConfig) handlerResetMetrics(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) handlerResetMetrics(w http.ResponseWriter, r *http.Request) {
 	cfg.fileserverHits.Store(0)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintf(w, "Hits reset to %d\n", cfg.fileserverHits.Load())
